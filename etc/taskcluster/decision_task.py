@@ -22,9 +22,6 @@ def main(task_for):
         # This local variable shadows the module-level function of the same name.
         android_x86_wpt = android_x86_release
 
-        # Implemented but disabled for now:
-        linux_wpt = lambda: None  # Shadows the existing top-level function
-
         all_tests = [
             linux_tidy_unit_docs,
             windows_unit,
@@ -57,7 +54,7 @@ def main(task_for):
             "try-linux": [linux_tidy_unit_docs, linux_release],
             "try-windows": [windows_unit, windows_arm64, windows_uwp_x64],
             "try-magicleap": [magicleap_dev],
-            "try-arm": [windows_arm64],
+            "try-arm": [linux_wpt],
             "try-wpt": [linux_wpt],
             "try-wpt-mac": [macos_wpt],
             "try-wpt-android": [android_x86_wpt],
@@ -100,7 +97,6 @@ def main(task_for):
 def mocked_only():
     windows_release()
     android_x86_wpt()
-    linux_wpt()
     decisionlib.DockerWorkerTask("Indexed by task definition").find_or_create()
 
 
@@ -116,13 +112,16 @@ build_env = {
 }
 unix_build_env = {
 }
+# Setting up a virtualenv for mach can require compiling native python modules.
+linux_env = {
+    "CC": "clang",
+    "CXX": "clang++",
+}
 linux_build_env = {
     "SHELL": "/bin/dash",  # For SpiderMonkey’s build system
     "CCACHE": "sccache",
     "RUSTC_WRAPPER": "sccache",
     "SCCACHE_IDLE_TIMEOUT": "1200",
-    "CC": "clang",
-    "CXX": "clang++",
 }
 macos_build_env = {}
 windows_build_env = {
@@ -155,7 +154,7 @@ def linux_tidy_unit_untrusted():
         .with_treeherder("Linux x64", "Tidy+Unit")
         .with_max_run_time_minutes(60)
         .with_dockerfile(dockerfile_path("build"))
-        .with_env(**build_env, **unix_build_env, **linux_build_env)
+        .with_env(**build_env, **unix_build_env, **linux_env, **linux_build_env)
         .with_repo()
         .with_script("""
             ./mach test-tidy --no-progress --all
@@ -525,7 +524,11 @@ def linux_wpt():
         .find_or_create("build.linux_x64_release~assertions" + CONFIG.task_id())
     )
     def linux_run_task(name):
-        return linux_task(name).with_dockerfile(dockerfile_path("run"))
+        return (
+            linux_task(name)
+            .with_env(**linux_env)
+            .with_dockerfile(dockerfile_path("run"))
+        )
     wpt_chunks("Linux x64", linux_run_task, release_build_task, repo_dir="/repo",
                total_chunks=2, processes=24)
 
@@ -762,7 +765,7 @@ def linux_build_task(name, *, build_env=build_env):
         .with_index_and_artifacts_expire_in(build_artifacts_expire_in)
         .with_max_run_time_minutes(60)
         .with_dockerfile(dockerfile_path("build"))
-        .with_env(**build_env, **unix_build_env, **linux_build_env)
+        .with_env(**build_env, **unix_build_env, **linux_env, **linux_build_env)
         .with_repo()
     )
 
