@@ -50,6 +50,7 @@ def main(task_for):
             "try": all_tests,
             "try-taskcluster": [
                 # Add functions here as needed, in your push to that branch
+                macos_wpt()
             ],
             "master": [
                 upload_docs,
@@ -1000,7 +1001,7 @@ CONFIG.default_provisioner_id = "proj-servo"
 CONFIG.docker_image_build_worker_type = "docker"
 
 CONFIG.windows_worker_type = "win2016"
-CONFIG.macos_worker_type = "macos"
+CONFIG.macos_worker_type = "macos-disabled-mac8"
 
 if __name__ == "__main__":  # pragma: no cover
     main(task_for=os.environ["TASK_FOR"])
