@@ -50,6 +50,7 @@ def main(task_for):
             "try": all_tests,
             "try-taskcluster": [
                 # Add functions here as needed, in your push to that branch
+                macos_wpt()
             ],
             "master": [
                 upload_docs,
@@ -637,7 +638,7 @@ def macos_wpt():
         build_task,
         repo_dir="repo",
         repo_kwargs=dict(alternate_object_dir="/var/cache/servo.git/objects"),
-        total_chunks=6,
+        total_chunks=30,
         processes=4,
     )
 
@@ -999,7 +1000,7 @@ CONFIG.default_provisioner_id = "proj-servo"
 CONFIG.docker_image_build_worker_type = "docker"
 
 CONFIG.windows_worker_type = "win2016"
-CONFIG.macos_worker_type = "macos"
+CONFIG.macos_worker_type = "macos-disabled-mac9"
 
 if __name__ == "__main__":  # pragma: no cover
     main(task_for=os.environ["TASK_FOR"])
