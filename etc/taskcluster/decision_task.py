@@ -20,6 +20,9 @@ def main(task_for):
     magicleap_dev = lambda: None
     magicleap_nightly = lambda: None
 
+    if task_for.startswith("github"):
+        CONFIG.routes_for_all_subtasks.append("checks")
+
     if task_for == "github-push":
         # FIXME https://github.com/servo/servo/issues/22187
         # In-emulator testing is disabled for now. (Instead we only compile.)
@@ -71,6 +74,23 @@ def main(task_for):
         }
         for function in by_branch_name.get(branch, []):
             function()
+
+        (
+            decisionlib.DockerWorkerTask("... oui")
+            .with_worker_type("docker")
+            .with_dockerfile(dockerfile_path("build"))
+            .with_script("sleep 60")
+            .create()
+        )
+        (
+            decisionlib.DockerWorkerTask("non")
+            .with_worker_type("docker")
+            .with_dockerfile(dockerfile_path("build"))
+            .with_priority("high")
+            .with_script("false")
+            .create()
+        )
+
 
     elif task_for == "github-pull-request":
         CONFIG.treeherder_repository_name = "servo-prs"
