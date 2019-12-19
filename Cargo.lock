@@ -4654,8 +4654,6 @@ dependencies = [
  "servo_arc",
  "smallvec 1.0.0",
  "thin-slice",
- "to_shmem",
- "to_shmem_derive",
 ]
 
 [[package]]
