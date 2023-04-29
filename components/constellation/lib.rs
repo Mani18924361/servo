@@ -14,6 +14,7 @@ extern crate serde;
 mod browsingcontext;
 mod constellation;
 mod event_loop;
+pub mod logger;
 mod network_listener;
 mod pipeline;
 mod sandboxing;
@@ -21,8 +22,8 @@ mod serviceworker;
 mod session_history;
 mod timer_scheduler;
 
-pub use crate::constellation::{
-    Constellation, FromCompositorLogger, FromScriptLogger, InitialConstellationState,
-};
+pub use crate::constellation::{Constellation, InitialConstellationState};
+
+pub use crate::logger::{FromCompositorLogger, FromScriptLogger};
 pub use crate::pipeline::UnprivilegedPipelineContent;
 pub use crate::sandboxing::{content_process_sandbox_profile, UnprivilegedContent};

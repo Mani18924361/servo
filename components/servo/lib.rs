@@ -80,8 +80,8 @@ use compositing::{CompositingReason, ConstellationMsg, IOCompositor, ShutdownSta
     not(target_arch = "aarch64")
 ))]
 use constellation::content_process_sandbox_profile;
+use constellation::logger::{FromCompositorLogger, FromScriptLogger};
 use constellation::{Constellation, InitialConstellationState, UnprivilegedContent};
-use constellation::{FromCompositorLogger, FromScriptLogger};
 use crossbeam_channel::{unbounded, Sender};
 use embedder_traits::{EmbedderMsg, EmbedderProxy, EmbedderReceiver, EventLoopWaker};
 use env_logger::Builder as EnvLoggerBuilder;
