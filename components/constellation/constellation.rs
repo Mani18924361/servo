@@ -166,7 +166,6 @@ use script_traits::{SWManagerMsg, SWManagerSenders, UpdatePipelineIdReason, WebD
 use serde::{Deserialize, Serialize};
 use servo_config::{opts, pref};
 use servo_rand::{random, Rng, ServoRng, SliceRandom};
-
 use servo_url::{Host, ImmutableOrigin, ServoUrl};
 use std::borrow::{Cow, ToOwned};
 use std::collections::hash_map::Entry;
