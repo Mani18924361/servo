@@ -17,6 +17,7 @@ use crate::style_ext::ComputedValuesExt;
 use crate::ContainingBlock;
 use atomic_refcell::AtomicRefMut;
 use std::cell::Cell;
+use style::properties::longhands::align_content::computed_value::T as AlignContent;
 use style::properties::longhands::align_items::computed_value::T as AlignItems;
 use style::properties::longhands::align_self::computed_value::T as AlignSelf;
 use style::properties::longhands::box_sizing::computed_value::T as BoxSizing;
@@ -44,6 +45,7 @@ struct FlexContext<'a> {
     flex_axis: FlexAxis,
     main_start_cross_start_sides_are: MainStartCrossStart,
     container_definite_inner_size: FlexRelativeVec2<Option<Length>>,
+    align_content: AlignContent,
     align_items: AlignItems,
 }
 
@@ -258,6 +260,7 @@ fn layout<'context, 'boxes>(
         FlexWrap::Nowrap | FlexWrap::Wrap => false,
         FlexWrap::WrapReverse => true,
     };
+    let align_content = containing_block.style.clone_align_content();
     let align_items = containing_block.style.clone_align_items();
 
     let mut flex_context = FlexContext {
@@ -268,6 +271,7 @@ fn layout<'context, 'boxes>(
         container_max_cross_size,
         container_is_single_line,
         flex_axis,
+        align_content,
         align_items,
         main_start_cross_start_sides_are: MainStartCrossStart::from(
             flex_direction,
@@ -310,30 +314,52 @@ fn layout<'context, 'boxes>(
         |flex_context, mut line| line.layout(flex_context, container_main_size),
     );
 
+    let content_cross_size = flex_lines
+        .iter()
+        .map(|line| line.cross_size)
+        .sum::<Length>();
+
     // https://drafts.csswg.org/css-flexbox/#algo-cross-container
     let container_cross_size = flex_context
         .container_definite_inner_size
         .cross
-        .unwrap_or_else(|| {
-            flex_lines
-                .iter()
-                .map(|line| line.cross_size)
-                .sum::<Length>()
-        })
+        .unwrap_or(content_cross_size)
         .clamp_between_extremums(
             flex_context.container_min_cross_size,
             flex_context.container_max_cross_size,
         );
 
-    // https://drafts.csswg.org/css-flexbox/#algo-line-align
+    // Align all flex lines per `align-content`.
+    let line_count = flex_lines.len() as f32;
     let mut cross_start_position_cursor = Length::zero();
+
+    let line_interval =
+        if flex_context.container_definite_inner_size.cross.is_some() && line_count >= 2.0 {
+            let free_space =
+                flex_context.container_definite_inner_size.cross.unwrap() - content_cross_size;
+
+            cross_start_position_cursor = match flex_context.align_content {
+                AlignContent::Center => free_space / 2.0,
+                AlignContent::SpaceAround => free_space / (line_count * 2.0),
+                AlignContent::FlexEnd => free_space,
+                _ => Length::zero(),
+            };
+
+            match flex_context.align_content {
+                AlignContent::SpaceBetween => free_space / (line_count - 1.0),
+                AlignContent::SpaceAround => free_space / line_count,
+                _ => Length::zero(),
+            }
+        } else {
+            Length::zero()
+        };
+
+    // https://drafts.csswg.org/css-flexbox/#algo-line-align
     let line_cross_start_positions = flex_lines
         .iter()
         .map(|line| {
-            // FIXME: “Align all flex lines per `align-content`.”
-            // For now we hard-code the behavior of `align-content: flex-start`.
             let cross_start = cross_start_position_cursor;
-            let cross_end = cross_start + line.cross_size;
+            let cross_end = cross_start + line.cross_size + line_interval;
             cross_start_position_cursor = cross_end;
             cross_start
         })
